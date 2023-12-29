@@ -1,12 +1,12 @@
 [package]
 name = "faucet"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Josh Bowden <josbow@gmail.com>"]
 description = "Back-pressured MPMC queue that can be drained after signaling completion"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/jaxrtech/faucet-drain"
-documentation = "https://docs.rs/faucet-drain/"
+repository = "https://github.com/jaxrtech/faucet"
+documentation = "https://docs.rs/faucet"
 readme = "README.md"
 keywords = ["async", "queue", "backpressure", "faucet"]
 categories = ["concurrency"]
