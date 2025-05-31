@@ -1,6 +1,6 @@
 [package]
 name = "faucet"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 authors = ["Josh Bowden <josbow@gmail.com>"]
 description = "Back-pressured MPMC queue that can be drained after signaling completion"
@@ -12,10 +12,12 @@ keywords = ["async", "queue", "backpressure", "faucet"]
 categories = ["concurrency"]
 
 [dependencies]
-tokio = { version = "1", default-features = false, features = ["macros"] }
-tokio-util = "0.7"
-deadqueue = "0.2"
+tokio = { version = "1.45.1", default-features = false, features = ["macros"] }
+tokio-util = "0.7.15"
+deadqueue = "0.2.4"
+dashmap = "7.0.0-rc2"
+tracing = "0.1.41"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread", "time"] }
-ctrlc = "3"
+ctrlc = "3.4.7"

@@ -1,3 +1,6 @@
+mod broadcast;
+pub use broadcast::*;
+
 use std::fmt::Debug;
 use std::ops::ControlFlow;
 use std::sync::Arc;
@@ -5,20 +8,6 @@ use std::sync::Arc;
 use tokio::select;
 use tokio_util::sync::CancellationToken;
 
-/// A back-pressured queue limited in size that can be drained after signaling
-/// completion.
-///
-/// This queue implementation has the following characteristics:
-///  * Based on [`deadqueue::limited::Queue`]
-///  * Has limited capacity with back-pressure on push
-///  * Can signal completion by calling [`end()`] or by providing a cancellation
-///    token and calling [`cancel()`] on it
-///  * Once completion is signaled, no additional values can be pushed while
-///    any values remaining in the queue can be drained
-///
-/// [`end()`]: Faucet::end
-/// [`cancel()`]: CancellationToken::cancel
-///
 #[derive(Debug)]
 pub struct Faucet<T> {
     queue: Arc<deadqueue::limited::Queue<T>>,
@@ -61,6 +50,18 @@ impl<T> Faucet<T> {
         }
     }
 
+    pub fn capacity(&self) -> usize {
+        self.queue.capacity()
+    }
+
+    pub fn len(&self) -> usize {
+        self.queue.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.queue.len() == 0
+    }
+
     /// Cancels the faucet, preventing any additional values from being pushed
     /// onto the queue. Any values already in the queue will be drained.
     pub fn end(&self) {
@@ -88,6 +89,10 @@ impl<T> Faucet<T> {
         self.completion.is_cancelled()
     }
 
+    pub async fn cancelled(&self) {
+        self.completion.cancelled().await
+    }
+
     /// Pushes a value onto the queue or waits until space is available.
     pub async fn push(&self, value: T) -> ControlFlow<(), ()> {
         select! {
@@ -100,17 +105,17 @@ impl<T> Faucet<T> {
         }
     }
 
-    /// Attempts to push a value onto the queue, returning `Err(value)` if the
-    /// queue is full or has been cancelled.
-    pub async fn try_push(&self, value: T) -> Result<(), T> {
-        if self.completion.is_cancelled() {
+    /// Attempts to push a value onto the queue, returning an error with the original value
+    /// if the queue is full.
+    pub fn try_push(&self, value: T) -> Result<(), T> {
+        if !self.is_pending() {
             return Err(value);
         }
 
         self.queue.try_push(value)
     }
 
-    /// Attempts to pop a value from the queue, returning `None` if the queue is
+    /// Attempts to pop a value from the queue, returning `None` if the queue
     /// has been cancelled and finished draining.
     pub async fn next(&self) -> Option<T> {
         select! {
@@ -129,15 +134,5 @@ impl<T> Faucet<T> {
     #[must_use]
     pub fn try_pop(&self) -> Option<T> {
         self.queue.try_pop()
-    }
-
-    /// The number of items currently stored in the queue.
-    pub fn len(&self) -> usize {
-        self.queue.len()
-    }
-
-    /// The maximum number of items that can be stored in the queue.
-    pub fn capacity(&self) -> usize {
-        self.queue.capacity()
     }
 }
